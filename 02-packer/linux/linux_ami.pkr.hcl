@@ -65,16 +65,18 @@ build {
   # Use the Amazon EBS source defined above
   sources = ["source.amazon-ebs.ubuntu_ami"]
 
+  provisioner "shell" {
+     inline = ["mkdir -p /tmp/html"] 
+  }
+ 
+  provisioner "file" {
+    source      = "./html/"
+    destination = "/tmp/html/"
+  }
 
   # Provisioner to run a shell script during the build
   provisioner "shell" {
     script = "./install.sh"       # Path to the install script
-  }
-
-  # Provisioner to copy local scripts to the instance
-  provisioner "file" {
-    source      = "./html/"              # Path to the local directory
-    destination = "/var/www/html/"       # Destination directory on the instance
   }
 
 }
