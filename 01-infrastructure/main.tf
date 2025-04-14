@@ -14,43 +14,4 @@ provider "aws" {
   region = "us-east-2" # Default region set to US East (Ohio). Modify if your deployment requires another region.
 }
 
-# Key Pair for Secure EC2 Instance Access
-resource "aws_key_pair" "flask-key" {
-  key_name   = "flask-key"                   # Name of the key pair in AWS
-  public_key = file("./keys/EC2_key_public")     # Path to the public key file for SSH access
-}
-
-# Number of instances to deploy in the autoscaling group
-# This variable defines the number of EC2 instances to be deployed within the Auto Scaling Group.
-# Adjust this value as necessary to meet the desired scalability and workload requirements.
-variable "asg_instances" {
-  default = 0 
-}
-
-# The AMI (Amazon Machine Image) to use in the launch template attached to the autoscaling group.
-
-variable "default_ami" {
-  default = "ami-0c80e2b6ccb9ad6d1" # Replace with your own AMI ID for customized deployments.
-}
-
-# Define a resource group based on "ResourceGroup=flask-asg-rg" tagging
-# We will compare resource groups between the three cloud
-
-resource "aws_resourcegroups_group" "flask_asg_rg" {
-  name        = "flask-asg-rg"
-  description = "Resource group for Flask ASG resources"
-
-    resource_query {
-    type  = "TAG_FILTERS_1_0"
-    query = jsonencode({
-      ResourceTypeFilters = ["AWS::AllSupported"] # Include all resource types
-      TagFilters = [
-        {
-          Key    = "ResourceGroup"
-          Values = ["flask-asg-rg"]
-        }
-      ]
-    })
-  }
-}
 
