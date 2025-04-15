@@ -3,6 +3,13 @@
 
 export AWS_DEFAULT_REGION="us-east-2"
 
+cd 03-deploy
+
+terraform init
+terraform destroy -auto-approve
+
+cd ..
+
 # Delete all versions of the games_ami
 for ami_id in $(aws ec2 describe-images \
     --owners self \
@@ -21,13 +28,6 @@ for ami_id in $(aws ec2 describe-images \
         aws ec2 delete-snapshot --snapshot-id $snapshot_id
     done
 done
-
-cd 03-deploy
-
-terraform init
-terraform destroy -auto-approve
-
-cd ..
 
 cd 01-infrastructure
 
