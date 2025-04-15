@@ -15,7 +15,10 @@ sudo systemctl start apache2 >/dev/null 2>&1
 
 sudo cp /tmp/html/* /var/www/html/
 
-# Make sure SSM agent is running
+# Ensure snap is ready
+sudo systemctl start snapd
+sudo systemctl enable snapd
 
-sudo systemctl enable amazon-ssm-agent
-sudo systemctl start amazon-ssm-agent
+# Start the snap-managed SSM agent
+sudo systemctl enable snap.amazon-ssm-agent.amazon-ssm-agent.service
+sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
