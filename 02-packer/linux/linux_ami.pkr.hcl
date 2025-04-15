@@ -44,6 +44,12 @@ variable "subnet_id" {
   default     = ""  # Replace with your actual subnet ID if needed
 }
 
+# Define a variable for the packer password
+variable "password" {
+  description = "The password for the packer account"
+  default     = "" 
+}
+
 # Define the Amazon EBS source for building the AMI
 source "amazon-ebs" "ubuntu_ami" {
   region            = var.region                 # Use the region variable
@@ -78,5 +84,12 @@ build {
   provisioner "shell" {
     script = "./install.sh"       # Path to the install script
   }
+
+ provisioner "shell" {
+   script = "./config_ssh.sh"
+   environment_vars = [
+     "PACKER_PASSWORD=${var.password}"
+     ]
+   }
 
 }
