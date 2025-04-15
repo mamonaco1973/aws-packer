@@ -3,7 +3,9 @@ resource "aws_instance" "games_server" {
   instance_type = "t3.micro"
 
   subnet_id              = data.aws_subnet.packer_subnet_1.id
-  vpc_security_group_ids = [data.aws_security_group.packer_sg_http.id]
+  vpc_security_group_ids = [data.aws_security_group.packer_sg_http.id,
+                            data.aws_security_group.packer_sg_https.id,
+                            data.aws_security_group.packer_sg_ssh.id]
 
   associate_public_ip_address = true
 

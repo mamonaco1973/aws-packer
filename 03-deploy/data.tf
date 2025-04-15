@@ -31,6 +31,27 @@ data "aws_security_group" "packer_sg_http" {
   vpc_id = data.aws_vpc.packer_vpc.id
 }
 
+
+# Data source to fetch security group for HTTPS (port 443)
+data "aws_security_group" "packer_sg_https" {
+  filter {
+    name   = "tag:Name"
+    values = ["packer-sg-https"]
+  }
+
+  vpc_id = data.aws_vpc.packer_vpc.id
+}
+
+# Data source to fetch security group for SSH (port 22)
+data "aws_security_group" "packer_sg_ssh" {
+  filter {
+    name   = "tag:Name"
+    values = ["packer-sg-ssh"]
+  }
+
+  vpc_id = data.aws_vpc.packer_vpc.id
+}
+
 # Data source to fetch security group for RDP (port 3389)
 data "aws_security_group" "packer_sg_rdp" {
   filter {

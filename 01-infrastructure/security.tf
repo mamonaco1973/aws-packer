@@ -59,6 +59,36 @@ resource "aws_security_group" "packer_sg_https" {
 }
 
 
+
+# Security Group for SSH Traffic: Allows inbound SSH access (port22) and unrestricted outbound traffic
+resource "aws_security_group" "packer_ssh" {
+  name        = "packer-sg-ssh"                      # Security group name
+  description = "Security group to allow port 22 access and open all outbound traffic"
+  vpc_id      = aws_vpc.packer-vpc.id                # Associate with the specified VPC
+
+  # Ingress Rule: Allows inbound HTTP (TCP on port 443) from any IP address
+  ingress {
+    from_port   = 22                                 # HTTP port
+    to_port     = 22                                 # HTTP port
+    protocol    = "tcp"                              # TCP protocol
+    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Open to all. Restrict in production!
+  }
+
+  
+
+  # Egress Rule: Allows all outbound traffic to any IP address and port
+  egress {
+    from_port   = 0                                  # All ports
+    to_port     = 0                                  # All ports
+    protocol    = "-1"                               # All protocols
+    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Unrestricted outbound traffic
+  }
+
+  tags = {
+    Name          = "packer-sg-ssh"                  # Tag for resource identification
+  }
+}
+
 # Security Group for RDP Traffic: Allows inbound RDP access (port 3389) and unrestricted outbound traffic
 
 resource "aws_security_group" "packer_sg_rdp" {
