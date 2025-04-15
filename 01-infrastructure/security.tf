@@ -87,3 +87,14 @@ resource "aws_security_group" "packer_sg_rdp" {
     Name          = "packer-sg-rdp"                 # Tag for resource identification
   }
 }
+
+
+resource "random_password" "generated" {
+  length  = 24
+  special = false  # Alphanumeric only (no special characters)
+}
+
+resource "local_file" "password_file" {
+  filename = "../password.txt"
+  content  = random_password.generated.result
+}
