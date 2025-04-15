@@ -1,121 +1,119 @@
+############################################
+# SECURITY GROUP: HTTP (PORT 80)
+############################################
 
-# Security Group for HTTP Traffic: Allows inbound HTTP access (port 80) and unrestricted outbound traffic
 resource "aws_security_group" "packer_sg_http" {
-  name        = "packer-sg-http"                     # Security group name
+  name        = "packer-sg-http"                           # Name of the security group
   description = "Security group to allow port 80 access and open all outbound traffic"
-  vpc_id      = aws_vpc.packer-vpc.id                # Associate with the specified VPC
+  vpc_id      = aws_vpc.packer-vpc.id                      # Associate SG with the packer VPC
 
-  # Ingress Rule: Allows inbound HTTP (TCP on port 80) from any IP address
+  # Ingress Rule — Allow HTTP traffic from anywhere
   ingress {
-    from_port   = 80                                 # HTTP port
-    to_port     = 80                                 # HTTP port
-    protocol    = "tcp"                              # TCP protocol
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Open to all. Restrict in production!
+    from_port   = 80                                       # Starting port — HTTP
+    to_port     = 80                                       # Ending port — HTTP
+    protocol    = "tcp"                                    # TCP protocol required for HTTP
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Open to all IPv4 addresses — not secure for production
   }
 
-  
-
-  # Egress Rule: Allows all outbound traffic to any IP address and port
+  # Egress Rule — Allow all outbound traffic
   egress {
-    from_port   = 0                                  # All ports
-    to_port     = 0                                  # All ports
-    protocol    = "-1"                               # All protocols
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Unrestricted outbound traffic
+    from_port   = 0                                        # Start of port range (0 = all)
+    to_port     = 0                                        # End of port range (0 = all)
+    protocol    = "-1"                                     # -1 = all protocols
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Unrestricted outbound access
   }
 
   tags = {
-    Name          = "packer-sg-http"                  # Tag for resource identification
+    Name = "packer-sg-http"                                # Name tag for easier lookup
   }
 }
 
+############################################
+# SECURITY GROUP: HTTPS (PORT 443)
+############################################
 
-# Security Group for HTTPS Traffic: Allows inbound HTTPS access (port 443) and unrestricted outbound traffic
 resource "aws_security_group" "packer_sg_https" {
-  name        = "packer-sg-https"                     # Security group name
+  name        = "packer-sg-https"                          # Name of the security group
   description = "Security group to allow port 443 access and open all outbound traffic"
-  vpc_id      = aws_vpc.packer-vpc.id                # Associate with the specified VPC
+  vpc_id      = aws_vpc.packer-vpc.id                      # Associate SG with the packer VPC
 
-  # Ingress Rule: Allows inbound HTTP (TCP on port 443) from any IP address
+  # Ingress Rule — Allow HTTPS traffic from anywhere
   ingress {
-    from_port   = 443                                # HTTP port
-    to_port     = 443                                # HTTP port
-    protocol    = "tcp"                              # TCP protocol
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Open to all. Restrict in production!
+    from_port   = 443                                      # Starting port — HTTPS
+    to_port     = 443                                      # Ending port — HTTPS
+    protocol    = "tcp"                                    # TCP protocol required for HTTPS
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Open to all IPv4 addresses — not secure for production
   }
 
-  
-
-  # Egress Rule: Allows all outbound traffic to any IP address and port
+  # Egress Rule — Allow all outbound traffic
   egress {
-    from_port   = 0                                  # All ports
-    to_port     = 0                                  # All ports
-    protocol    = "-1"                               # All protocols
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Unrestricted outbound traffic
+    from_port   = 0                                        # Start of port range (0 = all)
+    to_port     = 0                                        # End of port range (0 = all)
+    protocol    = "-1"                                     # -1 = all protocols
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Unrestricted outbound access
   }
 
   tags = {
-    Name          = "packer-sg-https"                  # Tag for resource identification
+    Name = "packer-sg-https"                               # Name tag for easier lookup
   }
 }
 
+############################################
+# SECURITY GROUP: SSH (PORT 22)
+############################################
 
-
-# Security Group for SSH Traffic: Allows inbound SSH access (port22) and unrestricted outbound traffic
 resource "aws_security_group" "packer_ssh" {
-  name        = "packer-sg-ssh"                      # Security group name
+  name        = "packer-sg-ssh"                            # Name of the security group
   description = "Security group to allow port 22 access and open all outbound traffic"
-  vpc_id      = aws_vpc.packer-vpc.id                # Associate with the specified VPC
+  vpc_id      = aws_vpc.packer-vpc.id                      # Associate SG with the packer VPC
 
-  # Ingress Rule: Allows inbound HTTP (TCP on port 443) from any IP address
+  # Ingress Rule — Allow SSH access from anywhere
   ingress {
-    from_port   = 22                                 # HTTP port
-    to_port     = 22                                 # HTTP port
-    protocol    = "tcp"                              # TCP protocol
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Open to all. Restrict in production!
+    from_port   = 22                                       # Starting port — SSH
+    to_port     = 22                                       # Ending port — SSH
+    protocol    = "tcp"                                    # TCP protocol required for SSH
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Open to all IPv4 addresses — not secure for production
   }
 
-  
-
-  # Egress Rule: Allows all outbound traffic to any IP address and port
+  # Egress Rule — Allow all outbound traffic
   egress {
-    from_port   = 0                                  # All ports
-    to_port     = 0                                  # All ports
-    protocol    = "-1"                               # All protocols
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Unrestricted outbound traffic
+    from_port   = 0                                        # Start of port range (0 = all)
+    to_port     = 0                                        # End of port range (0 = all)
+    protocol    = "-1"                                     # -1 = all protocols
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Unrestricted outbound access
   }
 
   tags = {
-    Name          = "packer-sg-ssh"                  # Tag for resource identification
+    Name = "packer-sg-ssh"                                 # Name tag for easier lookup
   }
 }
 
-# Security Group for RDP Traffic: Allows inbound RDP access (port 3389) and unrestricted outbound traffic
+############################################
+# SECURITY GROUP: RDP (PORT 3389)
+############################################
 
 resource "aws_security_group" "packer_sg_rdp" {
-  name        = "packer-sg-rdp"                     # Security group name
+  name        = "packer-sg-rdp"                            # Name of the security group
   description = "Security group to allow port 3389 and open all outbound traffic"
-  vpc_id      = aws_vpc.packer-vpc.id                # Associate with the specified VPC
+  vpc_id      = aws_vpc.packer-vpc.id                      # Associate SG with the packer VPC
 
-  # Ingress Rule: Allows inbound HTTPS (TCP on port 443) from any IP address
+  # Ingress Rule — Allow RDP access from anywhere
   ingress {
-    from_port   = 3389                                # RDP port
-    to_port     = 3389                                # RDP port
-    protocol    = "tcp"                               # TCP protocol
-    cidr_blocks = ["0.0.0.0/0"]                       # WARNING: Open to all. Restrict in production!
+    from_port   = 3389                                     # Starting port — RDP
+    to_port     = 3389                                     # Ending port — RDP
+    protocol    = "tcp"                                    # TCP protocol required for RDP
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Open to all IPv4 addresses — not secure for production
   }
 
-  
-  # Egress Rule: Allows all outbound traffic to any IP address and port
+  # Egress Rule — Allow all outbound traffic
   egress {
-    from_port   = 0                                  # All ports
-    to_port     = 0                                  # All ports
-    protocol    = "-1"                               # All protocols
-    cidr_blocks = ["0.0.0.0/0"]                      # WARNING: Unrestricted outbound traffic
+    from_port   = 0                                        # Start of port range (0 = all)
+    to_port     = 0                                        # End of port range (0 = all)
+    protocol    = "-1"                                     # -1 = all protocols
+    cidr_blocks = ["0.0.0.0/0"]                            # ⚠️ Unrestricted outbound access
   }
 
   tags = {
-    Name          = "packer-sg-rdp"                 # Tag for resource identification
+    Name = "packer-sg-rdp"                                 # Name tag for easier lookup
   }
 }
-
-

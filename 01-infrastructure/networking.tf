@@ -1,69 +1,87 @@
-# Main VPC for the packer example
+############################################
+# VPC CONFIGURATION FOR PACKER INFRASTRUCTURE
+############################################
+
+# Define the main Virtual Private Cloud (VPC)
 resource "aws_vpc" "packer-vpc" {
-  cidr_block           = "10.0.0.0/24"           # CIDR block for the VPC
-  enable_dns_support   = true                    # Enable DNS resolution
-  enable_dns_hostnames = true                    # Allow public DNS hostnames for instances
+  cidr_block           = "10.0.0.0/24"            # Assign a /24 CIDR block (256 IPs total) for internal networking
+  enable_dns_support   = true                     # Enable internal DNS resolution for EC2 instances
+  enable_dns_hostnames = true                     # Allow EC2 instances to be assigned DNS hostnames
   tags = {
-    Name          = "packer-vpc"                  # Tag for easy identification
-    ResourceGroup = "packer-asg-rg"               # Tag for resource manager
+    Name          = "packer-vpc"                  # Name tag for resource identification
+    ResourceGroup = "packer-asg-rg"               # Logical resource group identifier (non-AWS grouping)
   }
 }
 
-# Internet Gateway (IGW) for public subnet internet access
+############################################
+# INTERNET GATEWAY FOR OUTBOUND ACCESS
+############################################
+
+# Create an Internet Gateway for the VPC
 resource "aws_internet_gateway" "packer-igw" {
-  vpc_id = aws_vpc.packer-vpc.id                  # VPC to associate with the IGW
+  vpc_id = aws_vpc.packer-vpc.id                  # Attach IGW to the main VPC
   tags = {
-    Name          = "packer-igw"                  # Tag for easy identification
+    Name = "packer-igw"                           # Name tag for resource identification
   }
-  
 }
 
-# Route table for public internet traffic
+############################################
+# PUBLIC ROUTE TABLE FOR INTERNET ACCESS
+############################################
+
+# Create a new route table for public subnets
 resource "aws_route_table" "public" {
-  vpc_id = aws_vpc.packer-vpc.id                 # VPC to associate with the route table
+  vpc_id = aws_vpc.packer-vpc.id                  # Associate route table with the main VPC
   tags = {
-    Name = "public-route-table"                  # Tag for easy identification
+    Name = "public-route-table"                   # Name tag for route table
   }
 }
 
-# Default route for internet-bound traffic in the public route table
+# Create a default route to forward all internet-bound traffic to the IGW
 resource "aws_route" "default_route" {
-  route_table_id         = aws_route_table.public.id         # Public route table ID
-  destination_cidr_block = "0.0.0.0/0"                       # Route all IPv4 traffic
-  gateway_id             = aws_internet_gateway.packer-igw.id # Internet gateway ID
+  route_table_id         = aws_route_table.public.id          # Bind route to the public route table
+  destination_cidr_block = "0.0.0.0/0"                        # Catch-all route for all IPv4 traffic
+  gateway_id             = aws_internet_gateway.packer-igw.id # Route traffic to the Internet Gateway
 }
 
-# First public subnet within the VPC
+############################################
+# PUBLIC SUBNET DEFINITIONS
+############################################
+
+# Define the first public subnet (AZ: us-east-2a)
 resource "aws_subnet" "packer-subnet-1" {
-  vpc_id                  = aws_vpc.packer-vpc.id            # VPC to associate with the subnet
-  cidr_block              = "10.0.0.0/26"                    # CIDR block for the subnet
-  map_public_ip_on_launch = true                             # Automatically assign public IPs
-  availability_zone       = "us-east-2a"                     # Availability zone
+  vpc_id                  = aws_vpc.packer-vpc.id             # Associate subnet with the main VPC
+  cidr_block              = "10.0.0.0/26"                     # Allocate 64 IP addresses (10.0.0.0–10.0.0.63)
+  map_public_ip_on_launch = true                              # Automatically assign public IPs to instances
+  availability_zone       = "us-east-2a"                      # Place subnet in the first AZ
   tags = {
-    Name = "packer-subnet-1"                                 # Tag for easy identification
+    Name = "packer-subnet-1"                                  # Name tag for subnet identification
   }
 }
 
-# Second public subnet within the VPC
+# Define the second public subnet (AZ: us-east-2b)
 resource "aws_subnet" "packer-subnet-2" {
-  vpc_id                  = aws_vpc.packer-vpc.id            # VPC to associate with the subnet
-  cidr_block              = "10.0.0.64/26"                   # CIDR block for the subnet
-  map_public_ip_on_launch = true                             # Automatically assign public IPs
-  availability_zone       = "us-east-2b"                     # Availability zone
+  vpc_id                  = aws_vpc.packer-vpc.id             # Associate subnet with the main VPC
+  cidr_block              = "10.0.0.64/26"                    # Allocate 64 IP addresses (10.0.0.64–10.0.0.127)
+  map_public_ip_on_launch = true                              # Automatically assign public IPs to instances
+  availability_zone       = "us-east-2b"                      # Place subnet in the second AZ
   tags = {
-    Name = "packer-subnet-2"                                 # Tag for easy identification
+    Name = "packer-subnet-2"                                  # Name tag for subnet identification
   }
 }
 
-# Associate public route table with the first public subnet
+############################################
+# ROUTE TABLE ASSOCIATIONS WITH SUBNETS
+############################################
+
+# Associate the public route table with the first public subnet
 resource "aws_route_table_association" "public_rta_1" {
-  subnet_id      = aws_subnet.packer-subnet-1.id             # Subnet ID
-  route_table_id = aws_route_table.public.id                 # Public route table ID
+  subnet_id      = aws_subnet.packer-subnet-1.id             # Target: packer-subnet-1
+  route_table_id = aws_route_table.public.id                 # Use the public route table
 }
 
-# Associate public route table with the second public subnet
+# Associate the public route table with the second public subnet
 resource "aws_route_table_association" "public_rta_2" {
-  subnet_id      = aws_subnet.packer-subnet-2.id             # Subnet ID
-  route_table_id = aws_route_table.public.id                 # Public route table ID
+  subnet_id      = aws_subnet.packer-subnet-2.id             # Target: packer-subnet-2
+  route_table_id = aws_route_table.public.id                 # Use the public route table
 }
-
