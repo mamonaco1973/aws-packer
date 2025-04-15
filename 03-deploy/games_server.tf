@@ -8,7 +8,7 @@ resource "aws_instance" "games_server" {
                             data.aws_security_group.packer_sg_ssh.id]
 
   associate_public_ip_address = true
-
+  iam_instance_profile = aws_iam_instance_profile.ssm_instance_profile.name
   tags = {
     Name = "games-ec2-instance"
   }
