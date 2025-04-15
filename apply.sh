@@ -66,7 +66,7 @@ linux_server=$(aws ec2 describe-instances \
   --output text)
 
 echo "NOTE: Games URL is http://$linux_server"
-echo "NOTE: Games server is $linux_server."
+echo "NOTE: Games server is $linux_server"
 
 
 

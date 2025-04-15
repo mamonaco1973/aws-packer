@@ -1,4 +1,4 @@
-#!/bin/bash  # Declare Bash as the script interpreter
+#!/bin/bash
 
 # ------------------ Sanity Check: Ensure PACKER_PASSWORD is set ------------------
 

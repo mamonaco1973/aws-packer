@@ -1,4 +1,4 @@
-#!/bin/bash  # Define the script interpreter to be Bash
+#!/bin/bash
 
 # Set non-interactive mode for APT operations to avoid prompts during automation
 export DEBIAN_FRONTEND=noninteractive

@@ -22,6 +22,12 @@ for ami_id in $(aws ec2 describe-images \
     done
 done
 
+cd 03-deploy
+
+terraform init
+terraform destroy -auto-approve
+
+cd ..
 
 cd 01-infrastructure
 
