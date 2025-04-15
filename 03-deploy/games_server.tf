@@ -9,6 +9,14 @@ resource "aws_instance" "games_server" {
 
   associate_public_ip_address = true
   iam_instance_profile = aws_iam_instance_profile.ssm_instance_profile.name
+
+  user_data = <<-EOF
+              #!/bin/bash
+              # Enable SSH password authentication
+              sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
+              systemctl restart sshd
+              EOF
+
   tags = {
     Name = "games-ec2-instance"
   }
