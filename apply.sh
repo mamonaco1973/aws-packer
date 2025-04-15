@@ -58,5 +58,15 @@ terraform apply -auto-approve
 cd ..
 
 
+# Print Server Names
+
+linux_server=$(aws ec2 describe-instances \
+  --filters "Name=tag:Name,Values=games-ec2-instance" "Name=instance-state-name,Values=running" \
+  --query "Reservations[*].Instances[*].PublicDnsName" \
+  --output text)
+
+echo "NOTE: Games URL is http://$linux_server"
+echo "NOTE: Games server is $linux_server."
+
 
 
