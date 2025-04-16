@@ -26,7 +26,7 @@ try {
     # Step 2: Run installer silently
     Write-Host "Launching Chrome installer in silent mode..." -ForegroundColor Yellow
     try {
-        Start-Process -FilePath $InstallerPath -ArgumentList "/silent", "/install" -WindowStyle Hidden -NoNewWindow -Wait
+        Start-Process -FilePath $InstallerPath -ArgumentList "/silent", "/install" -Wait
         Write-Host "Chrome installation completed." -ForegroundColor Green
     }
     catch {
