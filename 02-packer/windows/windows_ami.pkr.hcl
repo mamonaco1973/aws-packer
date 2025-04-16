@@ -128,6 +128,10 @@ build {
   }
 
   provisioner "powershell" {
+    script = "./firefox.ps1"
+  }
+
+  provisioner "powershell" {
     inline = [
       #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
       "Set-Location $env:programfiles/amazon/ec2launch",
