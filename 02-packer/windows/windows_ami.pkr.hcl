@@ -60,7 +60,7 @@ variable "password" {
 source "amazon-ebs" "windows_ami" {
   region                = var.region                     # Use configured AWS region
   instance_type         = var.instance_type              # Use configured EC2 instance type
-  source_ami            = data.windows-base-os-image.id  # Use latest Windows 2022 AMI
+  source_ami            = data.amazon-ami.windows-base-os-image.id # Use latest Windows 2022 AMI
   ami_name              = "desktop_ami_${replace(timestamp(), ":", "-")}" # Unique AMI name using timestamp
   vpc_id                = var.vpc_id                     # Use specific VPC (required for custom networking)
   subnet_id             = var.subnet_id                  # Use specific subnet (must allow outbound internet)
