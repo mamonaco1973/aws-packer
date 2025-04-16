@@ -9,6 +9,10 @@ packer {
       source  = "github.com/hashicorp/amazon"     # Official Amazon plugin source from HashiCorp
       version = "~> 1"                             # Allow any compatible version within major version 1
     }
+    windows-update = {
+      source  = "github.com/rgl/windows-update"
+      version = "0.15.0"
+    }
   }
 }
 
@@ -67,10 +71,13 @@ source "amazon-ebs" "windows_ami" {
   winrm_insecure   = true
   winrm_use_ntlm   = true
   winrm_use_ssl    = true
-  winrm_username   = "packer"
+  winrm_username   = "Administrator"
   winrm_password   = var.password 
   communicator     = "winrm"
- 
+  user_data = templatefile("./bootstrap_win.ps1", {
+                         password = var.password
+                         })
+
  # Define EBS volume settings
   launch_block_device_mappings {
     device_name           = "/dev/sda1"                  # Root device name
@@ -91,6 +98,13 @@ source "amazon-ebs" "windows_ami" {
 build {
   sources = ["source.amazon-ebs.windows_ami"]             # Use the previously defined EBS source
  
+  # Add the windows-update provisioner here
+  provisioner "windows-update" {}
+
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
+  }
+
   # Run SSH configuration script, passing in a password variable
   #provisioner "shell" {
   # script = "./config_ssh.sh"                           # Custom script to enable SSH password login
