@@ -1,6 +1,8 @@
 # Set script to stop on all errors
 $ErrorActionPreference = "Stop"
 
+# https://www.snel.com/support/install-firefox-in-windows-server/
+
 try {
     # Define working directory
     $workdir = "C:\installer"

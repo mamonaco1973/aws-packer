@@ -1,6 +1,8 @@
 # Set strict error handling
 $ErrorActionPreference = "Stop"
 
+# https://www.snel.com/support/install-chrome-in-windows-server/
+
 try {
     Write-Host "Starting Chrome installation..." -ForegroundColor Cyan
 
