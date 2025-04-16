@@ -1,143 +1,154 @@
 ############################################
-# PACKER CONFIGURATION AND PLUGIN SETUP
+#              PACKER SETUP
 ############################################
 
-# Define global Packer settings and plugin dependencies
+# Declare global packer settings
 packer {
   required_plugins {
     amazon = {
-      source  = "github.com/hashicorp/amazon"     # Official Amazon plugin source from HashiCorp
-      version = "~> 1"                             # Allow any compatible version within major version 1
+      # Required for building AMIs on AWS using amazon-ebs
+      source  = "github.com/hashicorp/amazon"
+      version = "~> 1"  # Allow all versions within major version 1.x
     }
     windows-update = {
+      # Plugin for handling Windows Update during build
       source  = "github.com/rgl/windows-update"
-      version = "0.15.0"
+      version = "0.15.0"  # Explicit version pinning for reliability
     }
   }
 }
 
 ############################################
-# DATA SOURCE: WINDOWS 2022 FROM AMAZON
+#        FETCH WINDOWS 2022 BASE AMI
 ############################################
 
 data "amazon-ami" "windows-base-os-image" {
   filters = {
-    name                = "Windows_Server-2022-English-Full-Base-*"
-    root-device-type    = "ebs"
-    virtualization-type = "hvm"
+    name                = "Windows_Server-2022-English-Full-Base-*"  # Match latest Windows Server 2022
+    root-device-type    = "ebs"                                      # Ensure EBS-based AMIs
+    virtualization-type = "hvm"                                      # Required for modern EC2 types
   }
-  most_recent = true
-  owners      = ["amazon"]
+  most_recent = true     # Always grab the most recent version
+  owners      = ["amazon"]  # Official AMIs owned by AWS
 }
 
 ############################################
-# VARIABLES: REGION, INSTANCE SETTINGS, NETWORKING, AUTH
+#           PARAMETER VARIABLES
 ############################################
 
 variable "region" {
-  default = "us-east-2"                                  # AWS region: US East (Ohio)
+  default = "us-east-2"  # Default to Ohio region; override via CLI if needed
 }
 
 variable "instance_type" {
-  default = "t3.medium"                                   # Default instance type: t3.medium
+  default = "t3.medium"  # Good baseline for Windows builds (>=2GB RAM needed)
 }
 
 variable "vpc_id" {
-  description = "The ID of the VPC to use"               # User-supplied VPC ID
-  default     = ""                                       # Replace this at runtime or via command-line vars
+  description = "The ID of the VPC to use"  
+  default     = ""  # Must be supplied at runtime unless using default VPC
 }
 
 variable "subnet_id" {
-  description = "The ID of the subnet to use"            # User-supplied Subnet ID
-  default     = ""                                       # Replace this at runtime or via command-line vars
+  description = "The ID of the subnet to use"
+  default     = ""  # Must be public or have NAT for internet access (Windows updates)
 }
 
 variable "password" {
-  description = "The password for the packer account"    # Will be passed into provisioning script
-  default     = ""                                       # Must be overridden securely via env or CLI
+  description = "The password for the packer account"
+  default     = ""  # MUST be securely passed in via env var or CLI — DO NOT hardcode!
 }
 
 ############################################
-# AMAZON-EBS SOURCE BLOCK: BUILD CUSTOM UBUNTU IMAGE
+#      MAIN SOURCE BLOCK - WINDOWS AMI
 ############################################
 
 source "amazon-ebs" "windows_ami" {
-  region                = var.region                     # Use configured AWS region
-  instance_type         = var.instance_type              # Use configured EC2 instance type
-  source_ami            = data.amazon-ami.windows-base-os-image.id # Use latest Windows 2022 AMI
-  ami_name              = "desktop_ami_${replace(timestamp(), ":", "-")}" # Unique AMI name using timestamp
-  vpc_id                = var.vpc_id                     # Use specific VPC (required for custom networking)
-  subnet_id             = var.subnet_id                  # Use specific subnet (must allow outbound internet)
-  winrm_insecure   = true
-  winrm_use_ntlm   = true
-  winrm_use_ssl    = true
-  winrm_username   = "Administrator"
-  winrm_password   = var.password 
-  communicator     = "winrm"
-  user_data = templatefile("./bootstrap_win.ps1", {
-                         password = var.password
-                         })
+  region         = var.region
+  instance_type  = var.instance_type
+  source_ami     = data.amazon-ami.windows-base-os-image.id
+  ami_name       = "desktop_ami_${replace(timestamp(), ":", "-")}"  # Time-stamped name for uniqueness
+  vpc_id         = var.vpc_id
+  subnet_id      = var.subnet_id
 
- # Define EBS volume settings
+  # WinRM configuration (required to talk to Windows EC2)
+  winrm_insecure = true             # Allow self-signed cert
+  winrm_use_ntlm = true             # NTLM auth required in many builds
+  winrm_use_ssl  = true             # Always use SSL for encryption
+  winrm_username = "Administrator"  # Default admin user
+  winrm_password = var.password     # Strong password required or connection fails
+  communicator   = "winrm"
+
+  # Bootstrap script injected as user_data for early config
+  user_data = templatefile("./bootstrap_win.ps1", {
+    password = var.password  # Inject password into template (handle with care)
+  })
+
+  # Define root volume settings
   launch_block_device_mappings {
-    device_name           = "/dev/sda1"                  # Root device name
-    volume_size           = "64"                         # Size in GiB for root volume
-    volume_type           = "gp3"                        # Use gp3 volume for better performance
-    delete_on_termination = "true"                       # Ensure volume is deleted with instance
+    device_name           = "/dev/sda1"  # Root volume mount
+    volume_size           = "64"         # 64 GiB default size
+    volume_type           = "gp3"        # gp3 = better performance + cost than gp2
+    delete_on_termination = "true"       # Auto-cleanup of root disk when instance deleted
   }
 
   tags = {
-    Name = "desktop_ami_${replace(timestamp(), ":", "-")}" # Tag the AMI with a recognizable name
+    Name = "desktop_ami_${replace(timestamp(), ":", "-")}"  # Helpful for visual filtering in AWS Console
   }
 }
 
 ############################################
-# BUILD BLOCK: PROVISION FILES AND RUN SETUP SCRIPTS
+#             BUILD PROCESS
 ############################################
 
 build {
-  sources = ["source.amazon-ebs.windows_ami"]             # Use the previously defined EBS source
- 
-  # Add the windows-update provisioner here
+  sources = ["source.amazon-ebs.windows_ami"]  # Reference the source block
+
+  # Step 1: Install critical Windows Updates
   provisioner "windows-update" {}
 
+  # Step 2: Restart if required post-updates (15 min timeout)
   provisioner "windows-restart" {
     restart_timeout = "15m"
   }
 
+  # Step 3: Run your own script to configure users/security
   provisioner "powershell" {
-    script = "./security.ps1"  # Path to your local script
+    script = "./security.ps1"  # Creates local users, disables services, etc.
     environment_vars = [
-      "PACKER_PASSWORD==${var.password}"  
+      "PACKER_PASSWORD==${var.password}"  # Secure way to pass secret value
     ]
   }
 
+  # Step 4: Create target directory for postbuild artifacts
   provisioner "powershell" {
     inline = [
-      "mkdir c:\\mcloud"
+      "mkdir c:\\mcloud"  # Used as drop location for additional files
     ]
   }
 
+  # Step 5: Upload boot configuration script
   provisioner "file" {
-    source      = "./boot.ps1"
-    destination = "C:\\mcloud\\"
+    source      = "./boot.ps1"        # Local path
+    destination = "C:\\mcloud\\"      # Remote Windows path
   }
-  
+
+  # Step 6: Run script to install/configure Chrome
   provisioner "powershell" {
     script = "./chrome.ps1"
   }
 
+  # Step 7: Run script to install/configure Firefox
   provisioner "powershell" {
     script = "./firefox.ps1"
   }
 
+  # Step 8: Final prep using EC2Launch — handles sysprep, reset, etc.
   provisioner "powershell" {
     inline = [
-      #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
-      "Set-Location $env:programfiles/amazon/ec2launch",
-      "./ec2launch.exe reset -c ",
-      "./ec2launch.exe sysprep -c "
+      "Set-Location $env:programfiles/amazon/ec2launch",  # Go to EC2Launch folder
+      "./ec2launch.exe reset -c ",                        # Reset machine to preconfigured state
+      "./ec2launch.exe sysprep -c "                       # Run sysprep to make AMI reusable
     ]
   }
-
 }
