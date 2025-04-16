@@ -114,13 +114,17 @@ build {
 
   provisioner "powershell" {
     inline = [
-      "mkdir c:\mcloud"
+      "mkdir c:\\mcloud"
     ]
   }
 
   provisioner "file" {
     source      = "./boot.ps1"
     destination = "C:\\mcloud\\"
+  }
+  
+  provisioner "powershell" {
+    script = "./chrome.ps1"
   }
 
   provisioner "powershell" {
