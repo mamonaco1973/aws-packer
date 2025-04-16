@@ -109,8 +109,8 @@ build {
     inline = [
       #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
       "Set-Location $env:programfiles/amazon/ec2launch",
-      "./ec2launch.exe reset -c -b",
-      "./ec2launch.exe sysprep -c -b"
+      "./ec2launch.exe reset -c ",
+      "./ec2launch.exe sysprep -c "
     ]
   }
 
