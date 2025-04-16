@@ -31,10 +31,7 @@ try {
 
     # Install Firefox silently
     Write-Host "Launching Firefox installer silently..."
-    Start-Process -FilePath $destination -ArgumentList "/S"
-
-    # Wait for installation to complete
-    Start-Sleep -Seconds 35
+    Start-Process -FilePath $destination -ArgumentList "/S" -Wait
 
     # Remove installer
     Write-Host "Cleaning up installer files..."
