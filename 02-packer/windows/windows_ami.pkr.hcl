@@ -106,6 +106,14 @@ build {
   }
 
   provisioner "powershell" {
+    script = "./security.ps1"  # Path to your local script
+    environment_vars = [
+      "PACKER_PASSWORD={{ user `packer_password` }}"  
+    ]
+  }
+
+
+  provisioner "powershell" {
     inline = [
       #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
       "Set-Location $env:programfiles/amazon/ec2launch",
@@ -113,12 +121,4 @@ build {
       "./ec2launch.exe sysprep -c "
     ]
   }
-
-  # Run SSH configuration script, passing in a password variable
-  #provisioner "shell" {
-  # script = "./config_ssh.sh"                           # Custom script to enable SSH password login
-  #  environment_vars = [
-  #    "PACKER_PASSWORD=${var.password}"                  # Export password to the script environment
-  #  ]
-  #}
 }
