@@ -89,3 +89,25 @@ data "aws_ami" "latest_games_ami" {
   owners = ["self"]                     # Limit to AMIs owned by current AWS account
   # Use your AWS Account ID instead of "self" if pulling from a shared account
 }
+
+############################################
+# DATA SOURCE: FETCH MOST RECENT AMI FOR DESKTOP
+############################################
+
+data "aws_ami" "latest_desktop_ami" {
+  most_recent = true                    # Return the most recently created AMI matching filters
+
+  filter {
+    name   = "name"                     # Filter AMIs by name pattern
+    values = ["desktop_ami*"]             # Match AMI names starting with "games_ami"
+  }
+
+  filter {
+    name   = "state"                    # Filter AMIs by state
+    values = ["available"]              # Ensure AMI is in 'available' state
+  }
+
+  owners = ["self"]                     # Limit to AMIs owned by current AWS account
+  # Use your AWS Account ID instead of "self" if pulling from a shared account
+}
+

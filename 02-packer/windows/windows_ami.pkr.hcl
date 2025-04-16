@@ -114,6 +114,17 @@ build {
 
   provisioner "powershell" {
     inline = [
+      "mkdir c:\mcloud"
+    ]
+  }
+
+  provisioner "file" {
+    source      = "./boot.ps1"
+    destination = "C:\\mcloud\\"
+  }
+
+  provisioner "powershell" {
+    inline = [
       #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
       "Set-Location $env:programfiles/amazon/ec2launch",
       "./ec2launch.exe reset -c ",
@@ -121,11 +132,4 @@ build {
     ]
   }
 
-  # Run SSH configuration script, passing in a password variable
-  #provisioner "shell" {
-  # script = "./config_ssh.sh"                           # Custom script to enable SSH password login
-  #  environment_vars = [
-  #    "PACKER_PASSWORD=${var.password}"                  # Export password to the script environment
-  #  ]
-  #}
 }
