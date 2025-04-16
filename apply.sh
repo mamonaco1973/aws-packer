@@ -47,6 +47,12 @@ packer init ./linux_ami.pkr.hcl
 packer build -var "password=$password" -var "vpc_id=$vpc_id" -var "subnet_id=$subnet_id" ./linux_ami.pkr.hcl || { echo "NOTE: Packer build failed. Aborting."; exit 1; }
 cd ..
 
+cd windows
+echo "NOTE: Building Windows AMI with Packer."
+packer init ./windows_ami.pkr.hcl
+packer build -var "password=$password" -var "vpc_id=$vpc_id" -var "subnet_id=$subnet_id" ./windows_ami.pkr.hcl || { echo "NOTE: Packer build failed. Aborting."; exit 1; }
+cd ..
+
 cd ..
 
 # Step 3 - Deploy AMIs as EC2 instances
