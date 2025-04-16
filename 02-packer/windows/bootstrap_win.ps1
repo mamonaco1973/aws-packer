@@ -1,50 +1,34 @@
 <powershell>
 
-# MAKE SURE IN YOUR PACKER CONFIG TO SET:
-#
-#
-#    "winrm_username": "Administrator",
-#    "winrm_insecure": true,
-#    "winrm_use_ssl": true,
-#
-#
-
-# Attempting to set administrator password
 net user Administrator "${password}"
 wmic useraccount where "name='Administrator'" set PasswordExpires=FALSE
 
-write-output "Running User Data Script"
-write-host "(host) Running User Data Script"
-
 Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force -ErrorAction Ignore
+$ErrorActionPreference = "Stop"
 
-# Don't set this before Set-ExecutionPolicy as it throws an error
-$ErrorActionPreference = "stop"
+# Remove existing WinRM listeners
+Remove-Item -Path WSMan:\Localhost\listener\listener* -Recurse -ErrorAction SilentlyContinue
 
-# Remove HTTP listener
-Remove-Item -Path WSMan:\Localhost\listener\listener* -Recurse
-
-# Create a self-signed certificate to let ssl work
+# Create self-signed certificate
 $Cert = New-SelfSignedCertificate -CertstoreLocation Cert:\LocalMachine\My -DnsName "packer"
+
+# Create WinRM HTTPS listener
 New-Item -Path WSMan:\LocalHost\Listener -Transport HTTPS -Address * -CertificateThumbPrint $Cert.Thumbprint -Force
 
-# WinRM
-write-output "Setting up WinRM"
-write-host "(host) setting up WinRM"
+# Configure WinRM
+winrm quickconfig -q
+winrm set winrm/config '@{MaxTimeoutms="1800000"}'
+winrm set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}'
+winrm set winrm/config/service '@{AllowUnencrypted="true"}'
+winrm set winrm/config/client '@{AllowUnencrypted="true"}'
+winrm set winrm/config/service/auth '@{Basic="true"; CredSSP="true"; Negotiate="true"}'
 
-cmd.exe /c winrm quickconfig -q
-cmd.exe /c winrm set "winrm/config" '@{MaxTimeoutms="1800000"}'
-cmd.exe /c winrm set "winrm/config/winrs" '@{MaxMemoryPerShellMB="1024"}'
-cmd.exe /c winrm set "winrm/config/service" '@{AllowUnencrypted="true"}'
-cmd.exe /c winrm set "winrm/config/client" '@{AllowUnencrypted="true"}'
-cmd.exe /c winrm set "winrm/config/service/auth" '@{Basic="true"}'
-cmd.exe /c winrm set "winrm/config/client/auth" '@{Basic="true"}'
-cmd.exe /c winrm set "winrm/config/service/auth" '@{CredSSP="true"}'
-cmd.exe /c winrm set "winrm/config/listener?Address=*+Transport=HTTPS" "@{Port=`"5986`";Hostname=`"packer`";CertificateThumbprint=`"$($Cert.Thumbprint)`"}"
-cmd.exe /c netsh advfirewall firewall set rule group="remote administration" new enable=yes
-cmd.exe /c netsh firewall add portopening TCP 5986 "Port 5986"
-cmd.exe /c net stop winrm
-cmd.exe /c sc config winrm start= auto
-cmd.exe /c net start winrm
+# Enable firewall access for WinRM
+New-NetFirewallRule -DisplayName "Allow WinRM HTTPS" -Direction Inbound -Protocol TCP -LocalPort 5986 -Action Allow
+
+# Restart and configure WinRM service
+Stop-Service winrm
+Set-Service winrm -StartupType Automatic
+Start-Service winrm
 
 </powershell>

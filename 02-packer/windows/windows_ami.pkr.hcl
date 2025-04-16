@@ -105,6 +105,15 @@ build {
     restart_timeout = "15m"
   }
 
+  provisioner "powershell" {
+    inline = [
+      #Sysprep the instance with ECLaunch v2. Reset enables runonce scripts again.
+      "Set-Location $env:programfiles/amazon/ec2launch",
+      "./ec2launch.exe reset -c -b",
+      "./ec2launch.exe sysprep -c -b"
+    ]
+  }
+
   # Run SSH configuration script, passing in a password variable
   #provisioner "shell" {
   # script = "./config_ssh.sh"                           # Custom script to enable SSH password login
