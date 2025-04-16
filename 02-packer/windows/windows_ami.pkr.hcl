@@ -108,10 +108,9 @@ build {
   provisioner "powershell" {
     script = "./security.ps1"  # Path to your local script
     environment_vars = [
-      "PACKER_PASSWORD={{ user `packer_password` }}"  
+      "PACKER_PASSWORD==${var.password}"  
     ]
   }
-
 
   provisioner "powershell" {
     inline = [
@@ -121,4 +120,12 @@ build {
       "./ec2launch.exe sysprep -c "
     ]
   }
+
+  # Run SSH configuration script, passing in a password variable
+  #provisioner "shell" {
+  # script = "./config_ssh.sh"                           # Custom script to enable SSH password login
+  #  environment_vars = [
+  #    "PACKER_PASSWORD=${var.password}"                  # Export password to the script environment
+  #  ]
+  #}
 }
