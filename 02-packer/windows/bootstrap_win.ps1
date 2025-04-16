@@ -10,7 +10,7 @@
 #
 
 # Attempting to set administrator password
-net user Administrator Administrator
+net user Administrator "${password}"
 wmic useraccount where "name='Administrator'" set PasswordExpires=FALSE
 
 write-output "Running User Data Script"
