@@ -69,8 +69,9 @@ source "amazon-ebs" "windows_ami" {
   winrm_use_ssl    = true
   winrm_username   = "packer"
   winrm_password   = var.password 
-
-  # Define EBS volume settings
+  communicator     = "winrm"
+ 
+ # Define EBS volume settings
   launch_block_device_mappings {
     device_name           = "/dev/sda1"                  # Root device name
     volume_size           = "64"                         # Size in GiB for root volume
