@@ -143,7 +143,12 @@ build {
     script = "./firefox.ps1"
   }
 
-  # Step 8: Final prep using EC2Launch — handles sysprep, reset, etc.
+  # Step 8: Configure desktop icons
+  provisioner "powershell" {
+    script = "./firefox.ps1"
+  }
+
+  # Step 9: Final prep using EC2Launch — handles sysprep, reset, etc.
   provisioner "powershell" {
     inline = [
       "Set-Location $env:programfiles/amazon/ec2launch",  # Go to EC2Launch folder
