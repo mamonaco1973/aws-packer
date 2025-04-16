@@ -116,7 +116,7 @@ build {
   provisioner "powershell" {
     script = "./security.ps1"  # Creates local users, disables services, etc.
     environment_vars = [
-      "PACKER_PASSWORD==${var.password}"  # Secure way to pass secret value
+      "PACKER_PASSWORD=${var.password}"  # Secure way to pass secret value
     ]
   }
 
