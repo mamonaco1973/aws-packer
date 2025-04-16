@@ -13,8 +13,6 @@ try {
         exit 1
     }
 
-    Write-Host "Setting packer password to $envPassword"
-
     # Convert plain text password to secure string
     $securePassword = ConvertTo-SecureString $envPassword -AsPlainText -Force
 
