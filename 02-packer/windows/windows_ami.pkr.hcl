@@ -145,7 +145,7 @@ build {
 
   # Step 8: Configure desktop icons
   provisioner "powershell" {
-    script = "./firefox.ps1"
+    script = "./desktop.ps1"
   }
 
   # Step 9: Final prep using EC2Launch — handles sysprep, reset, etc.
