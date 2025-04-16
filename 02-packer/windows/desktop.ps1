@@ -1,4 +1,3 @@
-\
 try {
     # Customize Desktop Icons
 
