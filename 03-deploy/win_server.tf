@@ -10,7 +10,7 @@ resource "aws_instance" "desktop_server" {
   subnet_id = data.aws_subnet.packer_subnet_1.id        # Launch in the first public subnet
   vpc_security_group_ids = [                            # Attach multiple security groups for traffic control
     data.aws_security_group.packer_sg_https.id,         # Allow inbound HTTPS (port 443)
-    data.aws_security_group.packer_sg_rdp               # Allow inbound RDP (port 3389)
+    data.aws_security_group.packer_sg_rdp.id            # Allow inbound RDP (port 3389)
   ]
 
   associate_public_ip_address = true                    # Automatically assign a public IP on launch (for external access)
