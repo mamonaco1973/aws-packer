@@ -4,7 +4,7 @@
 
 resource "aws_instance" "desktop_server" {
   ami           = data.aws_ami.latest_desktop_ami.id   # Use the latest custom AMI that starts with "desktop_ami"
-  instance_type = "t3.medium"                          
+  instance_type = "t3.medium"                           # Instance type with more memory and CPU (2 vCPUs, 4 GiB RAM)
 
   # Network placement
   subnet_id = data.aws_subnet.packer_subnet_1.id        # Launch in the first public subnet
@@ -19,14 +19,12 @@ resource "aws_instance" "desktop_server" {
   # Attach IAM instance profile that allows SSM access (for remote management via AWS Systems Manager)
 
   ############################################
-  # USER DATA SCRIPT: INITIAL BOOT
+  # USER DATA SCRIPT: INITIAL BOOT CONFIGURATION
   ############################################
 
-  user_data = <<-EOF
-               <powershell>
-               powershell.exe -ExecutionPolicy Bypass -File "C:\mcloud\boot.ps1"
-               </powershell>
-               EOF
+  user_data = templatefile("${path.module}/scripts/userdata.ps1", {
+        ami_name = data.aws_ami.latest_desktop_ami.name
+  })
 
   ############################################
   # INSTANCE TAGGING

@@ -23,16 +23,9 @@ resource "aws_instance" "games_server" {
   # USER DATA SCRIPT: INITIAL BOOT CONFIGURATION
   ############################################
 
-  user_data = <<-EOF
-              #!/bin/bash
-              # Script runs on first boot — modify SSH server configuration to allow password-based login
-              
-              sed -i 's/^PasswordAuthentication no/PasswordAuthentication yes/' /etc/ssh/sshd_config.d/60-cloudimg-settings.conf
-              # Replace 'no' with 'yes' to enable password login for SSH
-              
-              systemctl restart sshd
-              # Restart SSH daemon to apply the new authentication setting
-              EOF
+  user_data = templatefile("${path.module}/scripts/userdata.sh", {
+      ami_name = data.aws_ami.latest_games_ami.name
+  })
 
   ############################################
   # INSTANCE TAGGING
