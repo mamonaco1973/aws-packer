@@ -1,4 +1,3 @@
-\
 try {
     echo "NOTE: AMI provisioned boot script ran" > c:\mcloud\boot.log
 }
