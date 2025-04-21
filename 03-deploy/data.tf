@@ -4,8 +4,8 @@
 
 data "aws_vpc" "packer_vpc" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-vpc"]             # Match the VPC named "packer-vpc"
+    name   = "tag:Name"
+    values = [var.vpc_name_tag]
   }
 }
 
@@ -13,19 +13,17 @@ data "aws_vpc" "packer_vpc" {
 # DATA SOURCES: FETCH PUBLIC SUBNETS BY NAME TAG
 ############################################
 
-# Fetch first public subnet by tag
 data "aws_subnet" "packer_subnet_1" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-subnet-1"]        # Match the subnet named "packer-subnet-1"
+    name   = "tag:Name"
+    values = [var.subnet_name_tag_1]
   }
 }
 
-# Fetch second public subnet by tag
 data "aws_subnet" "packer_subnet_2" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-subnet-2"]        # Match the subnet named "packer-subnet-2"
+    name   = "tag:Name"
+    values = [var.subnet_name_tag_2]
   }
 }
 
@@ -33,42 +31,37 @@ data "aws_subnet" "packer_subnet_2" {
 # DATA SOURCES: FETCH SECURITY GROUPS BY TAG AND VPC ID
 ############################################
 
-# Fetch security group for HTTP (port 80)
 data "aws_security_group" "packer_sg_http" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-sg-http"]         # Match SG named "packer-sg-http"
+    name   = "tag:Name"
+    values = [var.sg_name_http]
   }
-  vpc_id = data.aws_vpc.packer_vpc.id   # Ensure the SG is in the correct VPC
+  vpc_id = data.aws_vpc.packer_vpc.id
 }
 
-# Fetch security group for HTTPS (port 443)
 data "aws_security_group" "packer_sg_https" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-sg-https"]        # Match SG named "packer-sg-https"
+    name   = "tag:Name"
+    values = [var.sg_name_https]
   }
-  vpc_id = data.aws_vpc.packer_vpc.id   # Ensure the SG is in the correct VPC
+  vpc_id = data.aws_vpc.packer_vpc.id
 }
 
-# Fetch security group for SSH (port 22)
 data "aws_security_group" "packer_sg_ssh" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-sg-ssh"]          # Match SG named "packer-sg-ssh"
+    name   = "tag:Name"
+    values = [var.sg_name_ssh]
   }
-  vpc_id = data.aws_vpc.packer_vpc.id   # Ensure the SG is in the correct VPC
+  vpc_id = data.aws_vpc.packer_vpc.id
 }
 
-# Fetch security group for RDP (port 3389)
 data "aws_security_group" "packer_sg_rdp" {
   filter {
-    name   = "tag:Name"                 # Filter based on the "Name" tag
-    values = ["packer-sg-rdp"]          # Match SG named "packer-sg-rdp"
+    name   = "tag:Name"
+    values = [var.sg_name_rdp]
   }
-  vpc_id = data.aws_vpc.packer_vpc.id   # Ensure the SG is in the correct VPC
+  vpc_id = data.aws_vpc.packer_vpc.id
 }
-
 ############################################
 # DATA SOURCE: FETCH MOST RECENT AMI FOR GAME INSTANCES
 ############################################

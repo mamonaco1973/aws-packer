@@ -9,4 +9,3 @@ systemctl restart sshd
 
 echo "The AMI name is ${ami_name}."
 
-EOF
