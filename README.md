@@ -66,7 +66,7 @@ Terraform has been successfully initialized!
 The build process is divided into three phases:
 
 1. **Phase 1:** Use Terraform to provision network infrastructure and `packer` credentials as a secret.
-2. **Phase 2:** Build the `games` AMI and `desktop` AMIs using the network infrastructure from Phase 1. This part of the build takes the longest - at least 20 minutes.
+2. **Phase 2:** Use packer to build the `games` AMI and `desktop` AMIs using the network infrastructure from Phase 1. This part of the build takes the longest - at least 20 minutes.
 3. **Phase 3:** Create EC2 instances using the AMIs from Phase 2.
 
 ## Tour of Build Output in the AWS Console
