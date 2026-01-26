@@ -1,19 +1,30 @@
-############################################
-# DATA SOURCE: FETCH EXISTING VPC BY NAME TAG
-############################################
+# ==============================================================================
+# DATA SOURCES: LOOK UP EXISTING NETWORKING BY TAG
+# ==============================================================================
+#
+# These data sources discover pre-existing AWS resources by tag instead of
+# creating new infrastructure. This allows Packer and Terraform to integrate
+# cleanly with shared or centrally managed environments.
+# ==============================================================================
+
+# ==============================================================================
+# VPC: LOOKUP BY NAME TAG
+# ==============================================================================
 
 data "aws_vpc" "packer_vpc" {
+  # Resolve the target VPC using its Name tag value.
   filter {
     name   = "tag:Name"
     values = [var.vpc_name_tag]
   }
 }
 
-############################################
-# DATA SOURCES: FETCH PUBLIC SUBNETS BY NAME TAG
-############################################
+# ==============================================================================
+# SUBNETS: LOOKUP PUBLIC SUBNETS BY NAME TAG
+# ==============================================================================
 
 data "aws_subnet" "packer_subnet_1" {
+  # Resolve the first public subnet using its Name tag.
   filter {
     name   = "tag:Name"
     values = [var.subnet_name_tag_1]
@@ -21,86 +32,112 @@ data "aws_subnet" "packer_subnet_1" {
 }
 
 data "aws_subnet" "packer_subnet_2" {
+  # Resolve the second public subnet using its Name tag.
   filter {
     name   = "tag:Name"
     values = [var.subnet_name_tag_2]
   }
 }
 
-############################################
-# DATA SOURCES: FETCH SECURITY GROUPS BY TAG AND VPC ID
-############################################
+# ==============================================================================
+# SECURITY GROUPS: LOOKUP BY NAME TAG AND VPC
+# ==============================================================================
+#
+# Security groups are resolved by Name tag and constrained to the selected VPC
+# to avoid accidental matches across environments.
+# ==============================================================================
 
 data "aws_security_group" "packer_sg_http" {
+  # Lookup the HTTP security group within the target VPC.
   filter {
     name   = "tag:Name"
     values = [var.sg_name_http]
   }
+
   vpc_id = data.aws_vpc.packer_vpc.id
 }
 
 data "aws_security_group" "packer_sg_https" {
+  # Lookup the HTTPS security group within the target VPC.
   filter {
     name   = "tag:Name"
     values = [var.sg_name_https]
   }
+
   vpc_id = data.aws_vpc.packer_vpc.id
 }
 
 data "aws_security_group" "packer_sg_ssh" {
+  # Lookup the SSH security group within the target VPC.
   filter {
     name   = "tag:Name"
     values = [var.sg_name_ssh]
   }
+
   vpc_id = data.aws_vpc.packer_vpc.id
 }
 
 data "aws_security_group" "packer_sg_rdp" {
+  # Lookup the RDP security group within the target VPC.
   filter {
     name   = "tag:Name"
     values = [var.sg_name_rdp]
   }
+
   vpc_id = data.aws_vpc.packer_vpc.id
 }
-############################################
-# DATA SOURCE: FETCH MOST RECENT AMI FOR GAME INSTANCES
-############################################
+
+# ==============================================================================
+# AMI LOOKUP: MOST RECENT GAMES IMAGE
+# ==============================================================================
+#
+# Select the most recently created AMI matching the expected naming convention.
+# This is typically an image produced by a prior Packer build.
+# ==============================================================================
 
 data "aws_ami" "latest_games_ami" {
-  most_recent = true                    # Return the most recently created AMI matching filters
+  # Always return the most recent AMI matching the filters.
+  most_recent = true
 
+  # Match AMIs created with the "games_ami" naming prefix.
   filter {
-    name   = "name"                     # Filter AMIs by name pattern
-    values = ["games_ami*"]             # Match AMI names starting with "games_ami"
+    name   = "name"
+    values = ["games_ami*"]
   }
 
+  # Ensure the AMI is available for use.
   filter {
-    name   = "state"                    # Filter AMIs by state
-    values = ["available"]              # Ensure AMI is in 'available' state
+    name   = "state"
+    values = ["available"]
   }
 
-  owners = ["self"]                     # Limit to AMIs owned by current AWS account
-  # Use your AWS Account ID instead of "self" if pulling from a shared account
+  # Limit results to AMIs owned by the current AWS account.
+  owners = ["self"]
 }
 
-############################################
-# DATA SOURCE: FETCH MOST RECENT AMI FOR DESKTOP
-############################################
+# ==============================================================================
+# AMI LOOKUP: MOST RECENT DESKTOP IMAGE
+# ==============================================================================
+#
+# Select the most recent desktop AMI produced by the Windows Packer pipeline.
+# ==============================================================================
 
 data "aws_ami" "latest_desktop_ami" {
-  most_recent = true                    # Return the most recently created AMI matching filters
+  # Always return the most recent AMI matching the filters.
+  most_recent = true
 
+  # Match AMIs created with the "desktop_ami" naming prefix.
   filter {
-    name   = "name"                     # Filter AMIs by name pattern
-    values = ["desktop_ami*"]             # Match AMI names starting with "games_ami"
+    name   = "name"
+    values = ["desktop_ami*"]
   }
 
+  # Ensure the AMI is available for use.
   filter {
-    name   = "state"                    # Filter AMIs by state
-    values = ["available"]              # Ensure AMI is in 'available' state
+    name   = "state"
+    values = ["available"]
   }
 
-  owners = ["self"]                     # Limit to AMIs owned by current AWS account
-  # Use your AWS Account ID instead of "self" if pulling from a shared account
+  # Limit results to AMIs owned by the current AWS account.
+  owners = ["self"]
 }
-
