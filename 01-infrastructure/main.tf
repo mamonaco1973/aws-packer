@@ -1,17 +1,23 @@
-# Configure the AWS provider block
-# This section establishes the configuration for the AWS provider, which is essential for Terraform to communicate with AWS services.
-# The provider is responsible for managing and provisioning AWS resources defined in your Terraform code.
-# 
-# 'region' specifies the AWS region where Terraform will create and manage resources.
-# It is critical to set this value correctly, as deploying resources in an incorrect region can lead to higher latency, unexpected costs, or compliance issues.
-# 
-# Note:
-# - Ensure the AWS credentials (e.g., access keys) are properly configured in your environment.
-# - Use the AWS CLI, environment variables, or Terraform's native authentication methods for secure credential management.
-# - Replace "us-east-2" with the desired region code (e.g., "us-west-1") if deploying to a different AWS region.
+# ==============================================================================
+# AWS PROVIDER CONFIGURATION
+# ==============================================================================
+#
+# This provider block configures Terraform to interact with AWS services.
+# Terraform uses the AWS provider to authenticate, plan, and apply resource
+# changes defined in the configuration.
+#
+# The region setting determines where AWS resources will be created.
+# Choosing the correct region is important for latency, availability,
+# compliance, and cost considerations.
+#
+# Notes:
+# - Ensure AWS credentials are configured securely before running Terraform.
+# - Supported methods include environment variables, AWS CLI profiles,
+#   instance roles, or Terraform-native authentication mechanisms.
+# - Update the region value if deploying resources outside US East (Ohio).
+# ==============================================================================
 
 provider "aws" {
-  region = "us-east-2" # Default region set to US East (Ohio). Modify if your deployment requires another region.
+  # AWS region where all Terraform-managed resources will be created.
+  region = "us-east-2"
 }
-
-

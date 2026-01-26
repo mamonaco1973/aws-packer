@@ -1,114 +1,183 @@
-############################################
+# ==============================================================================
 # PACKER CONFIGURATION AND PLUGIN SETUP
-############################################
+# ==============================================================================
+#
+# This template builds a custom Ubuntu 24.04 AMI in AWS using the amazon-ebs
+# builder. The high-level workflow is:
+#
+#   1. Discover the latest Canonical Ubuntu 24.04 base AMI
+#   2. Launch a temporary EC2 instance in the target VPC and subnet
+#   3. Provision files and execute configuration scripts
+#   4. Create a new AMI and terminate the build instance
+#
+# Network identifiers and sensitive values are supplied at runtime to avoid
+# hardcoding environment-specific configuration or secrets.
+# ==============================================================================
 
-# Define global Packer settings and plugin dependencies
 packer {
+  # --------------------------------------------------------------------------
+  # Required plugins
+  # --------------------------------------------------------------------------
+  # Declare external plugins required by this Packer template.
   required_plugins {
     amazon = {
-      source  = "github.com/hashicorp/amazon"     # Official Amazon plugin source from HashiCorp
-      version = "~> 1"                             # Allow any compatible version within major version 1
+      # Official Amazon builder plugin maintained by HashiCorp.
+      source  = "github.com/hashicorp/amazon"
+
+      # Allow any compatible release within major version 1.
+      version = "~> 1"
     }
   }
 }
 
-############################################
+# ==============================================================================
 # DATA SOURCE: BASE UBUNTU AMI FROM CANONICAL
-############################################
+# ==============================================================================
+#
+# Resolve the most recent Canonical-provided Ubuntu 24.04 (Noble) AMI.
+# This avoids hardcoding AMI IDs and ensures builds stay current.
+# ==============================================================================
 
 data "amazon-ami" "linux-base-os-image" {
+  # --------------------------------------------------------------------------
+  # AMI filters
+  # --------------------------------------------------------------------------
+  # Constrain the search to Ubuntu 24.04 AMD64 images with EBS-backed storage.
   filters = {
-    name                = "*ubuntu-noble-24.04-amd64-*"  # Match only Ubuntu 24.04 (Noble) 64-bit AMIs
-    root-device-type    = "ebs"                          # Must be EBS-backed
-    virtualization-type = "hvm"                          # Use hardware-assisted virtualization
+    name                = "*ubuntu-noble-24.04-amd64-*"
+    root-device-type    = "ebs"
+    virtualization-type = "hvm"
   }
 
-  most_recent = true                                     # Always select the latest AMI version available
-  owners      = ["099720109477"]                         # Canonical’s official AWS account ID
+  # Always select the newest AMI that matches the filters.
+  most_recent = true
+
+  # Canonical's official AWS account ID.
+  owners = ["099720109477"]
 }
 
-############################################
-# VARIABLES: REGION, INSTANCE SETTINGS, NETWORKING, AUTH
-############################################
+# ==============================================================================
+# VARIABLES: REGION, INSTANCE SETTINGS, NETWORKING, AUTHENTICATION
+# ==============================================================================
 
 variable "region" {
-  default = "us-east-2"                                  # AWS region: US East (Ohio)
+  # AWS region where the build instance runs and the AMI is created.
+  default = "us-east-2"
 }
 
 variable "instance_type" {
-  default = "t2.micro"                                   # Default instance type: t2.micro (free-tier eligible)
+  # EC2 instance type used for the temporary build host.
+  default = "m5.large"
 }
 
 variable "vpc_id" {
-  description = "The ID of the VPC to use"               # User-supplied VPC ID
-  default     = ""                                       # Replace this at runtime or via command-line vars
+  # VPC in which the temporary build instance will be launched.
+  description = "The ID of the VPC to use"
+  default     = ""
 }
 
 variable "subnet_id" {
-  description = "The ID of the subnet to use"            # User-supplied Subnet ID
-  default     = ""                                       # Replace this at runtime or via command-line vars
+  # Subnet in which the temporary build instance will be launched.
+  # The subnet must allow outbound access for package installation.
+  description = "The ID of the subnet to use"
+  default     = ""
 }
 
 variable "password" {
-  description = "The password for the packer account"    # Will be passed into SSH provisioning script
-  default     = ""                                       # Must be overridden securely via env or CLI
+  # Password injected into provisioning scripts for SSH configuration.
+  # Override securely via CLI variables or environment-based secrets.
+  description = "The password for the packer account"
+  default     = ""
 }
 
-############################################
-# AMAZON-EBS SOURCE BLOCK: BUILD CUSTOM UBUNTU IMAGE
-############################################
+# ==============================================================================
+# AMAZON-EBS SOURCE: CUSTOM UBUNTU AMI BUILD
+# ==============================================================================
+#
+# The amazon-ebs builder launches a temporary EC2 instance from the source AMI,
+# applies provisioning steps, creates a new AMI, and then terminates the instance.
+# ==============================================================================
 
 source "amazon-ebs" "ubuntu_ami" {
-  region                = var.region                     # Use configured AWS region
-  instance_type         = var.instance_type              # Use configured EC2 instance type
-  source_ami            = data.amazon-ami.linux-base-os-image.id  # Use latest Ubuntu 24.04 AMI
-  ssh_username          = "ubuntu"                       # Default Ubuntu AMI login user
-  ami_name              = "games_ami_${replace(timestamp(), ":", "-")}" # Unique AMI name using timestamp
-  ssh_interface         = "public_ip"                    # Use public IP for provisioning connection
-  vpc_id                = var.vpc_id                     # Use specific VPC (required for custom networking)
-  subnet_id             = var.subnet_id                  # Use specific subnet (must allow outbound internet)
+  # --------------------------------------------------------------------------
+  # Core build configuration
+  # --------------------------------------------------------------------------
+  region        = var.region
+  instance_type = var.instance_type
 
-  # Define EBS volume settings
+  # Use the latest Ubuntu 24.04 AMI resolved via the data source.
+  source_ami = data.amazon-ami.linux-base-os-image.id
+
+  # Default SSH username for Canonical Ubuntu images.
+  ssh_username = "ubuntu"
+
+  # Generate a unique AMI name using a sanitized timestamp.
+  ami_name = "games_ami_${replace(timestamp(), ":", "-")}"
+
+  # Use the instance public IP for the SSH provisioning connection.
+  ssh_interface = "public_ip"
+
+  # Launch the build instance in the specified VPC and subnet.
+  vpc_id    = var.vpc_id
+  subnet_id = var.subnet_id
+
+  # --------------------------------------------------------------------------
+  # Root EBS volume configuration
+  # --------------------------------------------------------------------------
   launch_block_device_mappings {
-    device_name           = "/dev/sda1"                  # Root device name
-    volume_size           = "16"                         # Size in GiB for root volume
-    volume_type           = "gp3"                        # Use gp3 volume for better performance
-    delete_on_termination = "true"                       # Ensure volume is deleted with instance
+    device_name           = "/dev/sda1"
+    volume_size           = "16"
+    volume_type           = "gp3"
+    delete_on_termination = "true"
   }
 
+  # Apply identifying tags to the resulting AMI.
   tags = {
-    Name = "games_ami_${replace(timestamp(), ":", "-")}" # Tag the AMI with a recognizable name
+    Name = "games_ami_${replace(timestamp(), ":", "-")}"
   }
 }
 
-############################################
-# BUILD BLOCK: PROVISION FILES AND RUN SETUP SCRIPTS
-############################################
+# ==============================================================================
+# BUILD: FILE PROVISIONING AND CONFIGURATION SCRIPTS
+# ==============================================================================
+#
+# Provisioners run sequentially against the temporary build instance to install
+# software, copy assets, and apply system configuration.
+# ==============================================================================
 
 build {
-  sources = ["source.amazon-ebs.ubuntu_ami"]             # Use the previously defined EBS source
+  # Reference the amazon-ebs source defined above.
+  sources = ["source.amazon-ebs.ubuntu_ami"]
 
-  # Create a temp directory for HTML files
+  # --------------------------------------------------------------------------
+  # Prepare temporary directories on the instance
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    inline = ["mkdir -p /tmp/html"]                      # Ensure target directory exists on VM
+    inline = ["mkdir -p /tmp/html"]
   }
 
-  # Copy local HTML files to the instance
+  # --------------------------------------------------------------------------
+  # Copy static HTML assets to the instance
+  # --------------------------------------------------------------------------
   provisioner "file" {
-    source      = "./html/"                              # Source directory from local machine
-    destination = "/tmp/html/"                           # Target directory inside VM
+    source      = "./html/"
+    destination = "/tmp/html/"
   }
 
-  # Run install script inside the instance
+  # --------------------------------------------------------------------------
+  # Run the primary installation and configuration script
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    script = "./install.sh"                              # Installs and configures required packages
+    script = "./install.sh"
   }
 
-  # Run SSH configuration script, passing in a password variable
+  # --------------------------------------------------------------------------
+  # Configure SSH settings using a password passed via environment variables
+  # --------------------------------------------------------------------------
   provisioner "shell" {
-    script = "./config_ssh.sh"                           # Custom script to enable SSH password login
+    script = "./config_ssh.sh"
     environment_vars = [
-      "PACKER_PASSWORD=${var.password}"                  # Export password to the script environment
+      "PACKER_PASSWORD=${var.password}"
     ]
   }
 }

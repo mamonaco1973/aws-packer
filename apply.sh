@@ -1,152 +1,145 @@
 #!/bin/bash
 
-############################################
-# STEP 0: ENVIRONMENT VALIDATION
-############################################
+# ==============================================================================
+# APPLY PIPELINE: BUILD AND DEPLOY ENVIRONMENT
+# ==============================================================================
+#
+# This script performs an apply-only workflow to:
+# - Validate the local execution environment
+# - Provision networking infrastructure with Terraform
+# - Build Linux and Windows AMIs using Packer
+# - Deploy EC2 instances from the generated AMIs
+# - Output public access details for deployed instances
+#
+# The script is intentionally one-directional and does not perform teardown.
+# Execution stops immediately if any step fails.
+# ==============================================================================
 
-# Execute the environment check script to ensure all preconditions are met
+# ------------------------------------------------------------------------------
+# Strict shell behavior
+# ------------------------------------------------------------------------------
+# -e         Exit immediately if any command fails
+# -u         Treat unset variables as errors
+# -o pipefail  Fail if any command in a pipeline fails
+# ------------------------------------------------------------------------------
+set -euo pipefail
+
+# ==============================================================================
+# STEP 0: ENVIRONMENT VALIDATION
+# ==============================================================================
+#
+# Verify that required tools, credentials, and prerequisites are available
+# before continuing with infrastructure changes.
+# ==============================================================================
+
 ./check_env.sh
 
-# If the script failed (non-zero exit code), abort the process immediately
-if [ $? -ne 0 ]; then
-  echo "ERROR: Environment check failed. Exiting."
-  exit 1
-fi
-
-############################################
+# ==============================================================================
 # STEP 1: SET AWS DEFAULT REGION
-############################################
+# ==============================================================================
+#
+# Define the AWS region used by all subsequent AWS CLI, Terraform, and Packer
+# operations executed by this script.
+# ==============================================================================
 
-# Set the AWS region for all subsequent CLI commands
 export AWS_DEFAULT_REGION="us-east-2"
 
-############################################
-# STEP 2: TERRAFORM - BUILD NETWORKING INFRASTRUCTURE
-############################################
+# ==============================================================================
+# STEP 2: TERRAFORM APPLY - NETWORKING INFRASTRUCTURE
+# ==============================================================================
+#
+# Provision base networking resources required for Packer builds and EC2
+# deployments, including VPCs, subnets, and security groups.
+# ==============================================================================
 
-# Inform user about infrastructure provisioning step
-echo "NOTE: Building networking infrastructure."
+echo "NOTE: Applying networking infrastructure"
 
-# Navigate to the infrastructure provisioning folder
 cd 01-infrastructure
-
-# Initialize the Terraform backend and plugins
 terraform init
-
-# Apply the Terraform configuration non-interactively (auto-approve skips manual confirmation)
 terraform apply -auto-approve
-
-# Return to the root directory
 cd ..
 
-############################################
+# ==============================================================================
 # STEP 3: BUILD AMIS WITH PACKER
-############################################
+# ==============================================================================
+#
+# Retrieve required secrets and identifiers, then build Linux and Windows AMIs
+# using pre-defined Packer templates.
+# ==============================================================================
 
-# Retrieve the password for the Packer provisioning process from AWS Secrets Manager
+# Retrieve the Packer provisioning password from AWS Secrets Manager
 password=$(aws secretsmanager get-secret-value \
   --secret-id packer-credentials \
   --query 'SecretString' \
   --output text | jq -r '.password')
 
-# Validate that a non-empty password was successfully retrieved
 if [[ -z "$password" || "$password" == "null" ]]; then
-  echo "ERROR: Failed to retrieve password from secret 'packer-credentials'"
+  echo "ERROR: Failed to retrieve Packer password"
   exit 1
 fi
 
-# Extract the VPC ID of the VPC tagged as 'packer-vpc'
+# Resolve the VPC ID by Name tag
 vpc_id=$(aws ec2 describe-vpcs \
-  --region us-east-2 \
   --filters "Name=tag:Name,Values=packer-vpc" \
   --query "Vpcs[0].VpcId" \
   --output text)
 
-# Extract the Subnet ID of the subnet tagged as 'packer-subnet-1'
+# Resolve the subnet ID by Name tag
 subnet_id=$(aws ec2 describe-subnets \
-  --region us-east-2 \
   --filters "Name=tag:Name,Values=packer-subnet-1" \
   --query "Subnets[0].SubnetId" \
   --output text)
 
-# Move into the Packer configuration directory
 cd 02-packer
 
-############################################
+# ------------------------------------------------------------------------------
 # SUBSTEP: BUILD LINUX AMI
-############################################
+# ------------------------------------------------------------------------------
 
 cd linux
-echo "NOTE: Building Linux AMI with Packer."
+echo "NOTE: Building Linux AMI"
 
-# Initialize Packer to download necessary plugins and validate config
-packer init ./linux_ami.pkr.hcl
+packer init linux_ami.pkr.hcl
+packer build \
+  -var "password=$password" \
+  -var "vpc_id=$vpc_id" \
+  -var "subnet_id=$subnet_id" \
+  linux_ami.pkr.hcl
 
-# Execute the AMI build with injected variables for password, VPC, and Subnet
-packer build -var "password=$password" -var "vpc_id=$vpc_id" -var "subnet_id=$subnet_id" ./linux_ami.pkr.hcl || {
-  echo "NOTE: Packer build failed. Aborting."
-  exit 1
-}
-
-# Return to parent folder
 cd ..
 
-############################################
+# ------------------------------------------------------------------------------
 # SUBSTEP: BUILD WINDOWS AMI
-############################################
+# ------------------------------------------------------------------------------
 
 cd windows
-echo "NOTE: Building Windows AMI with Packer."
+echo "NOTE: Building Windows AMI"
 
-# Initialize Packer
-packer init ./windows_ami.pkr.hcl
+packer init windows_ami.pkr.hcl
+packer build \
+  -var "password=$password" \
+  -var "vpc_id=$vpc_id" \
+  -var "subnet_id=$subnet_id" \
+  windows_ami.pkr.hcl
 
-# Build the Windows AMI with same variables as above
-packer build -var "password=$password" -var "vpc_id=$vpc_id" -var "subnet_id=$subnet_id" ./windows_ami.pkr.hcl || {
-  echo "NOTE: Packer build failed. Aborting."
-  exit 1
-}
-
-# Return to root directory
 cd ../..
 
-############################################
-# STEP 4: TERRAFORM - DEPLOY EC2 INSTANCES
-############################################
+# ==============================================================================
+# STEP 4: TERRAFORM APPLY - EC2 DEPLOYMENT
+# ==============================================================================
+#
+# Deploy EC2 instances using the most recently built AMIs.
+# ==============================================================================
 
-echo "NOTE: Deploying EC2 instances based on the AMIs"
+echo "NOTE: Deploying EC2 instances"
 
-# Enter the deployment folder
 cd 03-deploy
-
-# Initialize Terraform
 terraform init
-
-# Apply EC2 deployment Terraform code without prompting
 terraform apply -auto-approve
-
-# Return to project root
 cd ..
 
-############################################
-# STEP 5: FETCH AND PRINT INSTANCE PUBLIC DNS NAMES
-############################################
+# ==============================================================================
+# STEP 5: VALIDATE THE BUILD.
+# ==============================================================================
 
-# Query AWS to get the public DNS name of the running Linux EC2 instance (tagged as games-ec2-instance)
-linux_server=$(aws ec2 describe-instances \
-  --filters "Name=tag:Name,Values=games-ec2-instance" "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].PublicDnsName" \
-  --output text)
-
-# Print access URL and DNS of the Linux server
-echo "NOTE: Games URL is http://$linux_server"
-echo "NOTE: Games server is $linux_server"
-
-# Query AWS to get the public DNS name of the running Windows EC2 instance (tagged as desktop-ec2-instance)
-windows_server=$(aws ec2 describe-instances \
-  --filters "Name=tag:Name,Values=desktop-ec2-instance" "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].PublicDnsName" \
-  --output text)
-
-# Print the Windows server DNS name
-echo "NOTE: Windows server is $windows_server"
+./validate.sh

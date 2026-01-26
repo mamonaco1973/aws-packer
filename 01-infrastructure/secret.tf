@@ -1,25 +1,36 @@
-############################################
-# SECURELY GENERATE AND STORE CREDENTIALS FOR PACKER
-############################################
+# ==============================================================================
+# SECURELY GENERATE AND STORE PACKER CREDENTIALS
+# ==============================================================================
+#
+# This module generates a strong random password and stores the resulting
+# username/password pair in AWS Secrets Manager.
+#
+# Notes:
+# - The secret value is versioned automatically via Secrets Manager.
+# - The password is generated at apply time and should not be hardcoded.
+# - Consider enabling automatic rotation if this secret is long-lived.
+# ==============================================================================
 
-# Generate a secure random alphanumeric password
 resource "random_password" "generated" {
-  length  = 24         # Total password length: 24 characters
-  special = false      # Exclude special characters (alphanumeric only for compatibility)
+  # Generate a random password for the Packer user.
+  length = 24
+
+  # Use an alphanumeric-only password for broad compatibility.
+  special = false
 }
 
-# Define a new Secrets Manager secret to store Packer credentials
 resource "aws_secretsmanager_secret" "packer_credentials" {
-  name = "packer-credentials"   # Logical name for the secret in AWS Secrets Manager
+  # Create the Secrets Manager secret container (metadata + IAM target).
+  name = "packer-credentials"
 }
 
-# Store the actual credential values in the secret (versioned)
 resource "aws_secretsmanager_secret_version" "packer_credentials_version" {
-  secret_id = aws_secretsmanager_secret.packer_credentials.id   # Reference the previously created secret
+  # Store the secret value as a new version on the secret container.
+  secret_id = aws_secretsmanager_secret.packer_credentials.id
 
-  # Encode credentials as a JSON string and store as the secret value
+  # Persist credentials as JSON for easy consumption by scripts and tooling.
   secret_string = jsonencode({
-    user     = "packer"                          # Static username for the Packer user
-    password = random_password.generated.result  # Dynamic, securely generated password
+    user     = "packer"
+    password = random_password.generated.result
   })
 }
