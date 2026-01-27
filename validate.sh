@@ -39,7 +39,7 @@ linux_server=$(aws ec2 describe-instances \
 
 # Print access information for the games server.
 echo "NOTE: Games URL is http://$linux_server"
-echo "NOTE: Games server DNS is $linux_server"
+echo "NOTE: Games server FQDN is $linux_server"
 
 # ==============================================================================
 # VALIDATE WINDOWS DESKTOP SERVER
@@ -56,4 +56,4 @@ windows_server=$(aws ec2 describe-instances \
   --output text)
 
 # Print access information for the Windows desktop server.
-echo "NOTE: Windows server DNS is $windows_server"
+echo "NOTE: Windows server FQDN is $windows_server"
