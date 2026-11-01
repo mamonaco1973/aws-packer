@@ -2,7 +2,7 @@
 # PACKER SETUP
 # ==============================================================================
 #
-# This template builds a custom Windows Server 2022 AMI on AWS using the
+# This template builds a custom Windows Server 2025 AMI on AWS using the
 # amazon-ebs builder. The build process provisions updates, security settings,
 # browsers, desktop configuration, and prepares the image for reuse.
 # ==============================================================================
@@ -32,10 +32,10 @@ packer {
 }
 
 # ==============================================================================
-# DATA SOURCE: WINDOWS SERVER 2022 BASE AMI
+# DATA SOURCE: WINDOWS SERVER 2025 BASE AMI
 # ==============================================================================
 #
-# Resolve the most recent Windows Server 2022 English base AMI published by AWS.
+# Resolve the most recent Windows Server 2025 English base AMI published by AWS.
 # This avoids hardcoding AMI IDs and ensures the build stays current.
 # ==============================================================================
 
@@ -43,9 +43,9 @@ data "amazon-ami" "windows-base-os-image" {
   # --------------------------------------------------------------------------
   # AMI filters
   # --------------------------------------------------------------------------
-  # Restrict results to official Windows Server 2022 EBS-backed HVM images.
+  # Restrict results to official Windows Server 2025 EBS-backed HVM images.
   filters = {
-    name                = "Windows_Server-2022-English-Full-Base-*"
+    name                = "Windows_Server-2025-English-Full-Base-*"
     root-device-type    = "ebs"
     virtualization-type = "hvm"
   }
@@ -107,7 +107,7 @@ source "amazon-ebs" "windows_ami" {
   region        = var.region
   instance_type = var.instance_type
 
-  # Use the latest Windows Server 2022 AMI resolved by the data source.
+  # Use the latest Windows Server 2025 AMI resolved by the data source.
   source_ami = data.amazon-ami.windows-base-os-image.id
 
   # Generate a unique AMI name using a sanitized timestamp.
@@ -168,16 +168,14 @@ build {
   sources = ["source.amazon-ebs.windows_ami"]
 
   # --------------------------------------------------------------------------
-  # Step 1: Install critical Windows Updates
+  # Steps 1-2: Windows Updates and the restart after them — DISABLED to cut
+  # build time; the base AMI is already patched to its release date.
   # --------------------------------------------------------------------------
-  provisioner "windows-update" {}
-
-  # --------------------------------------------------------------------------
-  # Step 2: Restart the instance if required after updates
-  # --------------------------------------------------------------------------
-  provisioner "windows-restart" {
-    restart_timeout = "15m"
-  }
+  # provisioner "windows-update" {}
+  #
+  # provisioner "windows-restart" {
+  #   restart_timeout = "15m"
+  # }
 
   # --------------------------------------------------------------------------
   # Step 3: Apply security configuration and user setup

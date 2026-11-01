@@ -5,7 +5,8 @@ try {
 
     # Set Administrator password and ensure it doesn't expire
     net user Administrator "${password}"
-    wmic useraccount where "name='Administrator'" set PasswordExpires=FALSE
+    # wmic is gone from Windows Server 2025; Set-LocalUser works on every version.
+    Set-LocalUser -Name Administrator -PasswordNeverExpires $true
 
     # Set execution policy and stop on all errors
     Set-ExecutionPolicy Unrestricted -Scope LocalMachine -Force -ErrorAction Ignore

@@ -12,6 +12,8 @@
 # ==============================================================================
 
 export AWS_DEFAULT_REGION="us-east-2"
+# AWS_REGION, if set in the caller's shell, overrides AWS_DEFAULT_REGION.
+export AWS_REGION="us-east-2"
 
 # ------------------------------------------------------------------------------
 # Strict shell behavior
