@@ -168,14 +168,16 @@ build {
   sources = ["source.amazon-ebs.windows_ami"]
 
   # --------------------------------------------------------------------------
-  # Steps 1-2: Windows Updates and the restart after them — DISABLED to cut
-  # build time; the base AMI is already patched to its release date.
+  # Step 1: Install critical Windows Updates
   # --------------------------------------------------------------------------
-  # provisioner "windows-update" {}
-  #
-  # provisioner "windows-restart" {
-  #   restart_timeout = "15m"
-  # }
+  provisioner "windows-update" {}
+
+  # --------------------------------------------------------------------------
+  # Step 2: Restart the instance if required after updates
+  # --------------------------------------------------------------------------
+  provisioner "windows-restart" {
+    restart_timeout = "15m"
+  }
 
   # --------------------------------------------------------------------------
   # Step 3: Apply security configuration and user setup
