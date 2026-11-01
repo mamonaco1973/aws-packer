@@ -1,61 +1,52 @@
 #!/bin/bash
+# ==============================================================================
+# validate.sh — print what you need to try the lab
+#
+# Both servers are public: the games server answers on HTTP, the Windows
+# desktop server on RDP. Both images carry the packer account, whose
+# password is in the packer-credentials secret.
+# ==============================================================================
 
-# ==============================================================================
-# VALIDATION SCRIPT: DEPLOYED INSTANCE VERIFICATION
-# ==============================================================================
-#
-# This script validates that EC2 instances deployed by the apply pipeline
-# are running and reachable by querying AWS for their public DNS names.
-#
-# It performs read-only operations and does not modify infrastructure.
-# The output can be used to confirm successful deployment or for quick access.
-# ==============================================================================
+set -euo pipefail
 
 export AWS_DEFAULT_REGION="us-east-2"
 # AWS_REGION, if set in the caller's shell, overrides AWS_DEFAULT_REGION.
 export AWS_REGION="us-east-2"
 
-# ------------------------------------------------------------------------------
-# Strict shell behavior
-# ------------------------------------------------------------------------------
-# -e            Exit immediately if any command fails
-# -u            Treat unset variables as errors
-# -o pipefail   Fail if any command in a pipeline fails
-# ------------------------------------------------------------------------------
-set -euo pipefail
+get_public_dns_by_name_tag() {
+  aws ec2 describe-instances \
+    --filters "Name=tag:Name,Values=$1" \
+              "Name=instance-state-name,Values=running" \
+    --query "Reservations[].Instances[].PublicDnsName" \
+    --output text | xargs
+}
 
-# ==============================================================================
-# VALIDATE LINUX GAMES SERVER
-# ==============================================================================
-#
-# Query AWS for the public DNS name of the running Linux EC2 instance that
-# hosts the games server.
-# ==============================================================================
+creds=$(aws secretsmanager get-secret-value --secret-id packer-credentials \
+  --query SecretString --output text)
+packer_user=$(echo "${creds}" | jq -r .user)
+packer_password=$(echo "${creds}" | jq -r .password)
+games_dns=$(get_public_dns_by_name_tag "games-ec2-instance")
+windows_dns=$(get_public_dns_by_name_tag "desktop-ec2-instance")
 
-linux_server=$(aws ec2 describe-instances \
-  --filters \
-    "Name=tag:Name,Values=games-ec2-instance" \
-    "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].PublicDnsName" \
-  --output text)
+echo ""
+echo "============================================================================"
+echo "Packer AMIs - Validation Output"
+echo "============================================================================"
+echo ""
 
-# Print access information for the games server.
-echo "NOTE: Games URL is http://$linux_server"
-echo "NOTE: Games server FQDN is $linux_server"
+if [ -n "${games_dns}" ] && [ "${games_dns}" != "None" ]; then
+  printf "NOTE: %-22s %s\n" "Games URL:" "http://${games_dns}"
+else
+  printf "WARN: %-22s %s\n" "Games server:" "not found or not running"
+fi
 
-# ==============================================================================
-# VALIDATE WINDOWS DESKTOP SERVER
-# ==============================================================================
-#
-# Query AWS for the public DNS name of the running Windows EC2 instance.
-# ==============================================================================
+if [ -n "${windows_dns}" ] && [ "${windows_dns}" != "None" ]; then
+  printf "NOTE: %-22s %s\n" "Windows server (RDP):" "${windows_dns}"
+else
+  printf "WARN: %-22s %s\n" "Windows server (RDP):" "not found or not running"
+fi
+echo ""
 
-windows_server=$(aws ec2 describe-instances \
-  --filters \
-    "Name=tag:Name,Values=desktop-ec2-instance" \
-    "Name=instance-state-name,Values=running" \
-  --query "Reservations[*].Instances[*].PublicDnsName" \
-  --output text)
-
-# Print access information for the Windows desktop server.
-echo "NOTE: Windows server FQDN is $windows_server"
+printf "NOTE: %-22s %s\n" "Packer user:" "${packer_user}"
+printf "NOTE: %-22s %s\n" "Packer password:" "${packer_password}"
+echo ""

@@ -89,22 +89,24 @@ new AMIs, and phase 3 always uses the newest. `apply.sh` ends by running
 `validate.sh`:
 
 ```
-NOTE: Games URL is http://ec2-203-0-113-10.us-east-2.compute.amazonaws.com
-NOTE: Games server FQDN is ec2-203-0-113-10.us-east-2.compute.amazonaws.com
-NOTE: Windows server FQDN is ec2-203-0-113-20.us-east-2.compute.amazonaws.com
+============================================================================
+Packer AMIs - Validation Output
+============================================================================
+
+NOTE: Games URL:             http://ec2-203-0-113-10.us-east-2.compute.amazonaws.com
+NOTE: Windows server (RDP):  ec2-203-0-113-20.us-east-2.compute.amazonaws.com
+
+NOTE: Packer user:           packer
+NOTE: Packer password:       ************************
 ```
 
 ## Try it
 
 1. Open the **Games URL** and pick a game.
-2. Get the `packer` password:
+2. Get the `packer` password: `validate.sh` prints it, and it is in the
+   `packer-credentials` secret.
 
-   ```bash
-   aws secretsmanager get-secret-value --secret-id packer-credentials \
-     --query SecretString --output text | jq -r .password
-   ```
-
-3. RDP to the **Windows server FQDN** as `packer`:
+3. RDP to the **Windows server** as `packer`:
 
    ![RDP sign-in](rdp.png)
 
