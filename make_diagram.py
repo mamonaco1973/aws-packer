@@ -111,7 +111,7 @@ NODES.update({
                  "Canonical base AMI"),
     "secret":   (COL[1], ROW[0], "store", "key", "Secrets Manager",
                  "packer-credentials"),
-    "winbase":  (COL[2], ROW[0], "navy", "layers", "Windows Server 2022",
+    "winbase":  (COL[2], ROW[0], "navy", "layers", "Windows Server 2025",
                  "Amazon base AMI"),
     "games":    (COL[0], ROW[1], "blue", "layers", "games AMI",
                  "Packer: Apache + 12 HTML games"),
@@ -154,7 +154,7 @@ EDGES = {
 
 ALT = ("Packer builds two AMIs inside a pre-built VPC: a games AMI from Canonical's "
        "Ubuntu 24.04 image, with Apache serving twelve HTML games, and a desktop AMI "
-       "from Amazon's Windows Server 2022 image, with Windows updates, Chrome and "
+       "from Amazon's Windows Server 2025 image, with Windows updates, Chrome and "
        "Firefox, sysprepped with EC2Launch. Both builds read the packer account "
        "password from Secrets Manager. Terraform then launches a server from each "
        "AMI: a browser reaches the games server over HTTP, and an RDP client "

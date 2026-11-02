@@ -2,7 +2,7 @@
 
 Two custom images built with **Packer** and deployed with **Terraform**: a
 Linux **games** AMI, Ubuntu 24.04 with Apache serving a dozen retro HTML
-games, and a Windows **desktop** AMI, Windows Server 2022 with the latest
+games, and a Windows **desktop** AMI, Windows Server 2025 with the latest
 updates, Chrome and Firefox. Both images carry a local `packer` account whose
 password comes from Secrets Manager, and Terraform launches one server from
 each.
@@ -12,7 +12,7 @@ each.
 | Piece | Where | Role |
 |---|---|---|
 | **games AMI** | `games_ami_<timestamp>` | Ubuntu 24.04 + Apache + 12 HTML games, SSM agent enabled, `packer` sudo user |
-| **desktop AMI** | `desktop_ami_<timestamp>` | Windows Server 2022 + Windows updates, Chrome, Firefox, `packer` admin user; sysprepped with EC2Launch |
+| **desktop AMI** | `desktop_ami_<timestamp>` | Windows Server 2025 + Windows updates, Chrome, Firefox, `packer` admin user; sysprepped with EC2Launch |
 | **games-ec2-instance** | `packer-subnet-1` (us-east-2a) | `t3.micro` from the newest games AMI; HTTP, HTTPS and SSH open |
 | **desktop-ec2-instance** | `packer-subnet-2` (us-east-2b) | `t3.medium` from the newest desktop AMI; HTTPS and RDP open |
 | **Secrets Manager** | regional | `packer-credentials`: the `packer` user and a generated password |
@@ -21,7 +21,7 @@ each.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="architecture-dark.svg">
-  <img alt="Packer builds two AMIs inside a pre-built VPC: a games AMI from Canonical's Ubuntu 24.04 image, with Apache serving twelve HTML games, and a desktop AMI from Amazon's Windows Server 2022 image, with Windows updates, Chrome and Firefox, sysprepped with EC2Launch. Both builds read the packer account password from Secrets Manager. Terraform then launches a server from each AMI: a browser reaches the games server over HTTP, and an RDP client reaches the Windows desktop server." src="architecture-light.svg">
+  <img alt="Packer builds two AMIs inside a pre-built VPC: a games AMI from Canonical's Ubuntu 24.04 image, with Apache serving twelve HTML games, and a desktop AMI from Amazon's Windows Server 2025 image, with Windows updates, Chrome and Firefox, sysprepped with EC2Launch. Both builds read the packer account password from Secrets Manager. Terraform then launches a server from each AMI: a browser reaches the games server over HTTP, and an RDP client reaches the Windows desktop server." src="architecture-light.svg">
 </picture>
 
 Regenerate with `python3 make_diagram.py`.
